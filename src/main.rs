@@ -228,7 +228,7 @@ f or forward 1-16 add 1-16     - The same as \"to\".
 f or forward 1-16 rm 1-16      - Remove forward from this port to another port.
 r or reload                    - Reload configuration from flash.
 wr or write                    - Write current memory configuration to flash.
-defaults                       - Write a default configutation to memory.
+defaults                       - Write a default configuration to memory.
 ";
 // id 1-16                - Identify port number by flashing leds for 10 seconds.
 // name 1-16 minimoog     - Assign a name of max 8 chars to a port.
@@ -311,7 +311,7 @@ fn parse_command(command: &str, port: &mut MidiOutputConnection) -> Result<bool,
 		"defaults" => {
 			sysex(port, &[0xf0, 0x7d, 0x2a, 0x4d, 0x05, 0xf7], 0x45, 6)?;
 			println!(
-				"Configuration reset to default, use \"p\" to view and \"w\" to write to flash."
+				"Configuration reset to defaults, use \"p\" to view the new configuration, \"w\" to write to flash and \"r\" to reload from flash."
 			);
 		}
 		"t" | "test" => {
