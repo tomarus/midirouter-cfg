@@ -240,7 +240,7 @@ enum ParseError {
 	#[error("Invalid mode, use \"all\", \"none\", \"to\" or \"rm\"")]
 	InvalidMode,
 
-	#[error("too few arguments, use \"h\" for help.")]
+	#[error("invalid number of arguments, use \"h\" for help.")]
 	Argument,
 
 	#[error("name should be no more than 8 characters.")]
@@ -285,8 +285,6 @@ fn parse_command(command: &str, port: &mut MidiOutputConnection) -> Result<bool,
 		"p" | "print" => {
 			let srcport = input.get(1).unwrap_or(&"0").parse::<u8>()?;
 			print_command(port, srcport)?;
-			// let msg = MESSAGE.lock()?;
-			// println!("{:?}", msg);
 		}
 		"f" | "forward" => {
 			if input.len() < 3 {
@@ -323,7 +321,7 @@ fn parse_command(command: &str, port: &mut MidiOutputConnection) -> Result<bool,
 			if input.len() < 2 {
 				return Err(ParseError::Argument);
 			}
-			let srcport = input.get(1).unwrap_or(&"0").parse::<u8>()?;
+			let srcport = input[1].parse::<u8>()?;
 			let mut newname = match input.get(2) {
 				None => return Err(ParseError::Argument),
 				Some(n) => n,
@@ -339,7 +337,10 @@ fn parse_command(command: &str, port: &mut MidiOutputConnection) -> Result<bool,
 			println!("Port renamed, use \"p\" to view the new configuration.");
 		}
 		"id" => {
-			let srcport = input.get(1).unwrap_or(&"0").parse::<u8>()?;
+			if input.len() != 2 {
+				return Err(ParseError::Argument);
+			}
+			let srcport = input[1].parse::<u8>()?;
 			sysex(port, &[0xf0, 0x7d, 0x2a, 0x4d, 0x07, srcport-1, 0xf7], 0x47, 6)?;
 			println!("Port {} LEDs turned on for approx 10 seconds.", srcport);
 		}
