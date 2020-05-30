@@ -8,20 +8,33 @@ fn midi8(msb: u8, lsb: u8) -> u8 {
 
 pub struct Port {
 	forwards: u16,
+	name: String,
 }
 
 impl From<&[u8]> for Port {
 	fn from(data: &[u8]) -> Self {
+		// construct forward mask
 		let m1 = midi8(data[0], data[1]);
 		let m2 = midi8(data[2], data[3]);
 		let mask = ((m1 as u16) << 8) + m2 as u16;
-		Port { forwards: mask }
+
+		// construct port name
+		let s: &[u8] = &[data[17], data[19], data[21], data[23], data[25], data[27], data[29], data[31]];
+		let st = match String::from_utf8(s.to_vec()) {
+			Ok(s) => s,
+			Err(_) => "".to_string(),
+		};
+
+		Port {
+			forwards: mask,
+			name: st.trim_matches(char::from(0)).to_string(),
+		}
 	}
 }
 
 impl fmt::Debug for Port {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "Forward: ")?;
+		write!(f, "{:<8} Forward: ", self.name)?;
 		for i in 0..16 {
 			let fwd = self.forwards & 1 << i;
 			if fwd > 0 {

@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 				if cmd == "quit" || cmd == "q" {
 					break;
 				}
-				match parse_command(cmd.as_str(), &mut conn_out) {
+				match parse_command(line.as_str(), &mut conn_out) {
 					Ok(res) => {
 						if res {
 							break;
@@ -152,7 +152,7 @@ fn block() -> Result<(), AppError> {
 		drop(msg);
 
 		sleep(Duration::from_millis(1));
-		n = n + 1;
+		n += 1;
 		if n > 5000 {
 			return Err(AppError::ReceiveTimeout);
 		}
@@ -226,12 +226,12 @@ f or forward 1-16 all          - Forwards this port to all ports except itself (
 f or forward 1-16 to 1-16      - Forwards this port to another port.
 f or forward 1-16 add 1-16     - The same as \"to\".
 f or forward 1-16 rm 1-16      - Remove forward from this port to another port.
+n or name 1-16 new_name        - Rename port, up to 8 chars. Use \"clear\" to clear the name.
 r or reload                    - Reload configuration from flash.
 wr or write                    - Write current memory configuration to flash.
 defaults                       - Write a default configuration to memory.
 ";
 // id 1-16                - Identify port number by flashing leds for 10 seconds.
-// name 1-16 minimoog     - Assign a name of max 8 chars to a port.
 // dump                   - Write current configuration to file.
 // restore                - Load configuration from dump file.
 
@@ -242,6 +242,9 @@ enum ParseError {
 
 	#[error("too few arguments, use \"h\" for help.")]
 	Argument,
+
+	#[error("name should be no more than 8 characters.")]
+	NameLength,
 
 	#[error("midi app: {source}")]
 	ParseAppError {
@@ -282,6 +285,8 @@ fn parse_command(command: &str, port: &mut MidiOutputConnection) -> Result<bool,
 		"p" | "print" => {
 			let srcport = input.get(1).unwrap_or(&"0").parse::<u8>()?;
 			print_command(port, srcport)?;
+			// let msg = MESSAGE.lock()?;
+			// println!("{:?}", msg);
 		}
 		"f" | "forward" => {
 			if input.len() < 3 {
@@ -313,6 +318,25 @@ fn parse_command(command: &str, port: &mut MidiOutputConnection) -> Result<bool,
 			println!(
 				"Configuration reset to defaults, use \"p\" to view the new configuration, \"w\" to write to flash and \"r\" to reload from flash."
 			);
+		}
+		"n" | "name" => {
+			if input.len() < 2 {
+				return Err(ParseError::Argument);
+			}
+			let srcport = input.get(1).unwrap_or(&"0").parse::<u8>()?;
+			let mut newname = match input.get(2) {
+				None => return Err(ParseError::Argument),
+				Some(n) => n,
+			};
+			if newname.len() > 8 {
+				return Err(ParseError::NameLength);
+			}
+			if newname == &"clear" {
+				newname = &""
+			}
+			let msg = [&[0xf0, 0x7d, 0x2a, 0x4d, 0x06, srcport-1], newname.as_bytes(), &[0xf7]].concat();
+			sysex(port, msg.as_slice(), 0x46, 6)?;
+			println!("Port renamed, use \"p\" to view the new configuration.");
 		}
 		"t" | "test" => {
 			sysex(port, &[0xf0, 0x7d, 0x2a, 0x4d, 0x06, 0xf7], 0x46, 6)?;
