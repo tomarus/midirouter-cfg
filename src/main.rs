@@ -227,11 +227,11 @@ f or forward 1-16 to 1-16      - Forwards this port to another port.
 f or forward 1-16 add 1-16     - The same as \"to\".
 f or forward 1-16 rm 1-16      - Remove forward from this port to another port.
 n or name 1-16 new_name        - Rename port, up to 8 chars. Use \"clear\" to clear the name.
+id 1-16                        - Identify port number by turning on LEDs for approx 10 seconds.
 r or reload                    - Reload configuration from flash.
 wr or write                    - Write current memory configuration to flash.
 defaults                       - Write a default configuration to memory.
 ";
-// id 1-16                - Identify port number by flashing leds for 10 seconds.
 // dump                   - Write current configuration to file.
 // restore                - Load configuration from dump file.
 
@@ -338,10 +338,10 @@ fn parse_command(command: &str, port: &mut MidiOutputConnection) -> Result<bool,
 			sysex(port, msg.as_slice(), 0x46, 6)?;
 			println!("Port renamed, use \"p\" to view the new configuration.");
 		}
-		"t" | "test" => {
-			sysex(port, &[0xf0, 0x7d, 0x2a, 0x4d, 0x06, 0xf7], 0x46, 6)?;
-			let msg = MESSAGE.lock()?;
-			println!("{:?}", msg);
+		"id" => {
+			let srcport = input.get(1).unwrap_or(&"0").parse::<u8>()?;
+			sysex(port, &[0xf0, 0x7d, 0x2a, 0x4d, 0x07, srcport-1, 0xf7], 0x47, 6)?;
+			println!("Port {} LEDs turned on for approx 10 seconds.", srcport);
 		}
 		"" => {}
 		_ => println!("Invalid command: \"{}\", type \"h\" for help.", command),
