@@ -1,7 +1,21 @@
-use std::fmt;
 use pretty_hex::*;
+use std::fmt;
+use std::sync::Mutex;
 
 use super::port;
+
+lazy_static! {
+	pub static ref MESSAGE: Mutex<Message> = Mutex::new(Message::new());
+}
+
+// handle_message is the midi input callback.
+// only the last received msg is stored currently.
+pub fn handle_message(tstamp: u64, message: &[u8], _: &mut ()) {
+	if message[0] == 0xf0 {
+		MESSAGE.lock().unwrap().tstamp = tstamp;
+		MESSAGE.lock().unwrap().message = message.to_vec();
+	}
+}
 
 pub struct Message {
 	pub tstamp: u64,
