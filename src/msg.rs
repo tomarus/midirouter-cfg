@@ -12,8 +12,9 @@ lazy_static! {
 // only the last received msg is stored currently.
 pub fn handle_message(tstamp: u64, message: &[u8], _: &mut ()) {
 	if message[0] == 0xf0 {
-		MESSAGE.lock().unwrap().tstamp = tstamp;
-		MESSAGE.lock().unwrap().message = message.to_vec();
+		let mut m = MESSAGE.lock().unwrap();
+		m.tstamp = tstamp;
+		m.message = message.to_vec();
 	}
 }
 
